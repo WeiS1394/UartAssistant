@@ -55,6 +55,7 @@ private slots:
     void on_AutoSend_toggled(bool checked);  //定时发送 按钮
     void on_OpenFileBtn_clicked();  //打开文件
     void on_SendFileBtn_clicked();  //发送文件
+    void msleep(int msec);
     void on_ReceiveStopBtn_clicked();  //停止 按钮
     void on_ReceiveSaveBtn_clicked();  //保存窗口
     void on_ReceiveClearBtn_clicked();  //清除窗口

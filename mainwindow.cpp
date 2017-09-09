@@ -23,15 +23,14 @@ MainWindow::MainWindow(QWidget *parent) :
     g_isHexSend = false;  //初始化十六进制发送
 
     //串口选择
-    ui->portNameComboBox->addItem("COM1");
-    ui->portNameComboBox->addItem("COM2");
-    ui->portNameComboBox->addItem("COM3");
-    ui->portNameComboBox->addItem("COM4");
-    ui->portNameComboBox->addItem("COM5");
-    ui->portNameComboBox->addItem("COM6");
-    ui->portNameComboBox->addItem("COM7");
-    ui->portNameComboBox->addItem("COM8");
-    ui->portNameComboBox->addItem("COM9");
+    for (int i = 1; i < 21; i++) {
+        QString comName = trUtf8("COM%1").arg(i);
+        myCom = new Win_QextSerialPort(comName);
+        if (myCom->open(QIODevice::ReadWrite)) {
+            ui->portNameComboBox->addItem(comName);
+        }
+        myCom->close();
+    }
 
     myTime = new QTimer();  //  设置一个单发定时器
     myTime->setInterval(1000);  //  自动发送间隔初始化
@@ -346,18 +345,18 @@ void MainWindow::on_SendFileBtn_clicked()
 {
     QTextCodec::setCodecForCStrings(QTextCodec::codecForName("GBK"));
     QFile file(ui->FileLineEdit->text());
-    int num;
+    int num = file.size();
     ui->textBrowser->clear();
     ui->textBrowser->insertPlainText(trUtf8("文件大小：%1字节，请稍后...\n\n").arg(file.size()));
 
-    if (file.open(QIODevice::ReadOnly | QIODevice::Unbuffered)) {
-        QTextStream textSend(&file);
-        QString sendString = textSend.readAll();
-        num = sendString.length();
-        QByteArray buf = sendString.toAscii();
-        myCom->write(buf);
-        updateStateBar(QString(), QVariant(QVariant::Int), buf.size());
-    }
+     file.open(QIODevice::ReadOnly | QIODevice::Unbuffered);
+     while (!file.atEnd()) {
+         QByteArray buf = file.readLine();
+         myCom->write(buf);
+         msleep(100);
+     }
+
+    updateStateBar(QString(), QVariant(QVariant::Int), file.size());
     progressBar->setVisible(true);  //显示进度条
     progressBar->setRange(0, num);
     for (int i = 1; i < num; i++) {
@@ -366,6 +365,22 @@ void MainWindow::on_SendFileBtn_clicked()
     progressBar->setVisible(false);
 
 }
+
+/*
+ * 延时读取
+ */
+void MainWindow::msleep(int msec)
+{
+    QDateTime last = QDateTime::currentDateTime();
+    QDateTime now;
+
+    while (1) {
+        now = QDateTime::currentDateTime();
+        if (last.msecsTo(now) >= msec)
+            break;
+    }
+}
+
 
 /*
  * 停止接收数据
